@@ -4,7 +4,9 @@
 import subprocess
 import ipaddress
 from subprocess import Popen, PIPE
-import socket
+import socket, time
+
+socket_list = []
 
 def badScan():
     # Create the network
@@ -29,24 +31,40 @@ def badScan():
         else:
             print(ip, "is offline")
 
-def NewScan():
-    # Tello address
-    tello_address = ('192.168.10.1', 8889)
-
-    # Create a UDP socket
+def makeSocket(ip):
+    global socket_list
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('', 61031))
+    socket_list.append(sock)
+
+def NewScan():
+    global socket_list
+    # Tello address
+    tello_address = ('192.168.10.1', 8889)
+    ip_net = ipaddress.ip_network(u'10.0.3.1/24', strict=False)
+    
+    
+    
 
     # Command to send
     message = "command"
 
     # Send the command
-    sock.sendto(message.encode('utf-8'), tello_address)
-    print('message sent')
+    for i in ip_net:
+        makeSocket(i)
+        #time.sleep(0.1)
     # Receive the response (optional)
+    time_start = time.time()
+    while (time_start - time.time()) <5:
 
-    response, ip_address = sock.recvfrom(1024)
-    print(f"Received message: {response.decode(encoding='utf-8')}")
-    sock.close()
+        for sock in socket_list():
+            try:
+                response, = sock.recvfrom(1024)
+                print(f"Received message: {response.decode(encoding='utf-8')}")
+                sock.close()
+            except Exception:
+                print(f'Did not recieve a resoponse from')
+            finally:
+                pass
 
 NewScan()
